@@ -105,7 +105,7 @@ namespace SonarQubeWorker.DataAccess
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // Construct URL with component and metrics
-                string url = $"/api/measures/component?component={component}&metricKeys=bugs,new_bugs,code_smells,vulnerabilities,new_vulnerabilities,coverage,sqale_rating,reliability_rating,security_rating,security_review_rating,security_hotspots,coverage&organization={_organizationName}";
+                string url = $"/api/measures/component?component={component}&metricKeys=bugs,new_bugs,code_smells,vulnerabilities,new_vulnerabilities,coverage,sqale_rating,reliability_rating,security_rating,security_review_rating,security_hotspots,coverage,complexity&organization={_organizationName}";
 
                 // Send a GET request to the SonarQube API
                 HttpResponseMessage response = await client.GetAsync(url);

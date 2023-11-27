@@ -12,6 +12,7 @@
         public double Coverage { get; set; }
         public double SecurityRating { get; set; }
         public int SecurityHotspots { get; set; }
+        public int Complexity {  get; set; }
     }
 
 

@@ -30,9 +30,9 @@ namespace SonarQubeWorker.DataAccess
         {
             const string query = @"
         INSERT INTO SonarQubeResults 
-            (Id, Name, ScaleRating, SecurityReviewRating, ReliabilityRating, CodeSmells, Bugs, Vulnerabilities, Coverage, SecurityRating, SecurityHotspots) 
+            (Id, Name, ScaleRating, SecurityReviewRating, ReliabilityRating, CodeSmells, Bugs, Vulnerabilities, Coverage, SecurityRating, SecurityHotspots, Complexity) 
         VALUES 
-            (@Id, @Name, @ScaleRating, @SecurityReviewRating, @ReliabilityRating, @CodeSmells, @Bugs, @Vulnerabilities, @Coverage, @SecurityRating, @SecurityHotspots);";
+            (@Id, @Name, @ScaleRating, @SecurityReviewRating, @ReliabilityRating, @CodeSmells, @Bugs, @Vulnerabilities, @Coverage, @SecurityRating, @SecurityHotspots, @Complexity);";
 
             var affectedRows = await CreateConnection().ExecuteAsync(query, new
             {
@@ -46,7 +46,8 @@ namespace SonarQubeWorker.DataAccess
                 Vulnerabilities = results.Vulnerabilities,
                 Coverage = results.Coverage,
                 SecurityRating = results.SecurityRating,
-                SecurityHotspots = results.SecurityHotspots
+                SecurityHotspots = results.SecurityHotspots,
+                Complexity = results.Complexity
             });
 
             return affectedRows > 0;

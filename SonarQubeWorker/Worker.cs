@@ -234,6 +234,9 @@ namespace SonarQubeWorker
                         case "security_hotspots":
                             result.SecurityHotspots = int.Parse(measure.Value);
                             break;
+                        case "complexity":
+                            result.Complexity = int.Parse(measure.Value);
+                            break;
                             // Add additional cases here if there are more metrics.
                     }
                 }
