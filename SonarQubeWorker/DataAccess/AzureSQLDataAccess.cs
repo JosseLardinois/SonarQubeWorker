@@ -14,11 +14,9 @@ namespace SonarQubeWorker.DataAccess
     public class AzureSQLDataAccess : IAzureSQLDataAccess
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
-        public AzureSQLDataAccess(ILogger<AzureSQLDataAccess> logger)
+        public AzureSQLDataAccess()
         {
             _connectionString = Environment.GetEnvironmentVariable("SQDBCS");
-            _logger = logger;
         }
 
         private IDbConnection CreateConnection()

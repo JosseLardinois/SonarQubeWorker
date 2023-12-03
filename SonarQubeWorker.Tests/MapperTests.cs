@@ -19,7 +19,7 @@ namespace SonarQubeWorker.Tests
         public void Setup()
         {
             _mockLogger = new Mock<ILogger>();
-            _mapper = new Mapper.Mapper(_mockLogger.Object);
+            _mapper = new Mapper.Mapper();
         }
 
         [Test]

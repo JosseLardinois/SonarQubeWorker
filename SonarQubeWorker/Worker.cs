@@ -11,12 +11,13 @@ namespace SonarQubeWorker
         private readonly ISonarQubeDataAccess _sonarQubeDataAccess;
         private readonly IAzureBlobDataAccess _azureBlobDataAccess;
         private readonly IAzureSQLDataAccess _azureSQLDataAccess;
+        private readonly IMapper _mapper;
         private readonly ILogger<Worker> _logger;
         private readonly string _serviceBusConnectionString;
         private readonly string _topicName;
         private readonly string _subscriptionName;
 
-        public Worker(ILogger<Worker> logger, IAzureBlobDataAccess azureBlobDataAccess, ISonarQubeDataAccess sonarQubeDataAccess, IAzureSQLDataAccess azureSQLDataAccess)
+        public Worker(ILogger<Worker> logger, IAzureBlobDataAccess azureBlobDataAccess, ISonarQubeDataAccess sonarQubeDataAccess, IAzureSQLDataAccess azureSQLDataAccess, IMapper mapper)
         {
             _azureBlobDataAccess = azureBlobDataAccess;
             _sonarQubeDataAccess = sonarQubeDataAccess;
@@ -25,6 +26,7 @@ namespace SonarQubeWorker
             _serviceBusConnectionString = Environment.GetEnvironmentVariable("SQServiceBusCS");
             _topicName = Environment.GetEnvironmentVariable("SQTopicName");
             _subscriptionName = Environment.GetEnvironmentVariable("SQSubscriptionName");
+            _mapper = mapper;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -85,7 +87,7 @@ namespace SonarQubeWorker
                 await Task.Delay(5000);
                 var results = await _sonarQubeDataAccess.GetSonarqubeResults(filename);
 
-                var mappedResults = await MapToResults(results);
+                var mappedResults = await _mapper.MapToResults(results);
 
                 var isInserterd = await _azureSQLDataAccess.InsertSonarQubeResultsAsync(mappedResults);
 
@@ -192,57 +194,6 @@ namespace SonarQubeWorker
                 // You can also log the error if needed.
                 throw new Exception($"Error extracting zip file '{filename}': {ex.Message}");
             }
-        }
-
-        private async Task<SonarQubeResults> MapToResults(string json)
-        {
-            var response = JsonConvert.DeserializeObject<SonarQubeResponse>(json);
-            var result = new SonarQubeResults();
-
-            if (response?.Component != null)
-            {
-                result.Name = response.Component.Name;
-
-                foreach (var measure in response.Component.Measures)
-                {
-                    switch (measure.Metric)
-                    {
-                        case "sqale_rating":
-                            result.ScaleRating = double.Parse(measure.Value);
-                            break;
-                        case "security_review_rating":
-                            result.SecurityReviewRating = double.Parse(measure.Value);
-                            break;
-                        case "reliability_rating":
-                            result.ReliabilityRating = double.Parse(measure.Value);
-                            break;
-                        case "code_smells":
-                            result.CodeSmells = int.Parse(measure.Value);
-                            break;
-                        case "bugs":
-                            result.Bugs = int.Parse(measure.Value);
-                            break;
-                        case "vulnerabilities":
-                            result.Vulnerabilities = int.Parse(measure.Value);
-                            break;
-                        case "coverage":
-                            result.Coverage = double.Parse(measure.Value);
-                            break;
-                        case "security_rating":
-                            result.SecurityRating = double.Parse(measure.Value);
-                            break;
-                        case "security_hotspots":
-                            result.SecurityHotspots = int.Parse(measure.Value);
-                            break;
-                        case "complexity":
-                            result.Complexity = int.Parse(measure.Value);
-                            break;
-                            // Add additional cases here if there are more metrics.
-                    }
-                }
-            }
-
-            return result;
         }
     }
 }

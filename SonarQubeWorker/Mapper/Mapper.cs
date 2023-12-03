@@ -10,10 +10,9 @@ using System.Threading.Tasks;
 namespace SonarQubeWorker.Mapper
 {
     public class Mapper : IMapper
-    { private readonly ILogger _logger;
-        public Mapper(ILogger logger)
+    { 
+        public Mapper()
         {
-            _logger = logger;
         }
 
         public async Task<SonarQubeResults> MapToResults(string json)
@@ -59,7 +58,6 @@ namespace SonarQubeWorker.Mapper
                         case "complexity":
                             result.Complexity = int.Parse(measure.Value);
                             break;
-                            // Add additional cases here if there are more metrics.
                     }
                 }
             }
