@@ -9,7 +9,7 @@ WORKDIR /src
 
 # Install SonarScanner and Java in the build stage
 RUN apt-get update && \
-    apt-get install -y openjdk-11-jre-headless && \
+    apt-get install -y openjdk-17-jre-headless && \
     dotnet tool install --global dotnet-sonarscanner
 
 # Set the path to include dotnet global tools
@@ -34,7 +34,7 @@ WORKDIR /app
 
 # Install Java in the final stage
 RUN apt-get update && \
-    apt-get install -y openjdk-11-jre-headless
+    apt-get install -y openjdk-17-jre-headless
 
 # Find Java installation path and set JAVA_HOME
 RUN JAVA_HOME_DIR=$(dirname $(dirname $(readlink -f $(which java)))) && \

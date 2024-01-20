@@ -29,27 +29,22 @@ namespace SonarQubeWorker.DataAccess
         {
             using (var client = new HttpClient())
             {
-                // Set the base address and authentication headers
                 client.BaseAddress = new Uri(_sonarQubeUrl);
                 var byteArray = System.Text.Encoding.ASCII.GetBytes($"{_adminUsername}:");
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-                // Prepare the content to be sent (token name)
                 var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("name", projectName + "Token"),
                     new KeyValuePair<string, string>("organization", _organizationName)
                 });
 
-                // Send a POST request to the SonarQube API
                 HttpResponseMessage response = await client.PostAsync("/api/user_tokens/generate", content);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    // Assuming the response contains a JSON with the token
-                    // Extract the token from the response and return it
-                    var token = ExtractTokenFromResponse(responseContent); // Implement this method based on your SonarQube version's response format
+                    var token = ExtractTokenFromResponse(responseContent);
                     return token;
                 }
                 else
@@ -64,13 +59,9 @@ namespace SonarQubeWorker.DataAccess
             var projectKey = projectName;
             using (var client = new HttpClient())
             {
-                // Set the base address for HTTP requests
                 client.BaseAddress = new Uri(_sonarQubeUrl);
-
-                // Set basic authentication header with admin credentials
                 var byteArray = System.Text.Encoding.ASCII.GetBytes($"{_adminUsername}:");
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-                // Prepare content to be sent (project key and name)
                 var content = new FormUrlEncodedContent(new[]
                 {
             new KeyValuePair<string, string>("project", projectKey),
@@ -78,10 +69,8 @@ namespace SonarQubeWorker.DataAccess
             new KeyValuePair<string, string>("organization", _organizationName)
         });
 
-                // Send a POST request to the SonarQube API
                 HttpResponseMessage response = await client.PostAsync("/api/projects/create", content);
 
-                // Check response status
                 if (response.IsSuccessStatusCode)
                 {
                     Console.WriteLine("Project created successfully.");
@@ -100,24 +89,13 @@ namespace SonarQubeWorker.DataAccess
                 // Set the base address for HTTP requests
                 client.BaseAddress = new Uri(_sonarQubeUrl);
 
-                // Set basic authentication header with admin credentials
                 var byteArray = System.Text.Encoding.ASCII.GetBytes($"{_adminUsername}:");
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-                // Construct URL with component and metrics
                 string url = $"/api/measures/component?component={component}&metricKeys=bugs,new_bugs,code_smells,vulnerabilities,new_vulnerabilities,coverage,sqale_rating,reliability_rating,security_rating,security_review_rating,security_hotspots,coverage,complexity&organization={_organizationName}";
-
-                // Send a GET request to the SonarQube API
                 HttpResponseMessage response = await client.GetAsync(url);
-
-                // Check response status
                 if (response.IsSuccessStatusCode)
                 {
-
-                    var i = response.Content;
-                    var y = response.Content.ReadAsStringAsync(); ;
-                    Console.WriteLine(i);
-                    // Read and return the response content as a string
                     return await response.Content.ReadAsStringAsync();
                 }
                 else
@@ -136,15 +114,10 @@ namespace SonarQubeWorker.DataAccess
 
             try
             {
-                // Execute SonarScanner Begin
                 var sonarBeginCommand = $"dotnet-sonarscanner begin /k:'{projectKey}' /o:'{_organizationName}' /d:sonar.host.url='{_sonarQubeUrl}' /d:sonar.login='{_adminUsername}'";
                 await ExecuteCommand("/bin/bash", $"-c \"{sonarBeginCommand}\"", solutionPath);
-
-                // Execute dotnet build
                 var buildCommand = "dotnet build";
                 await ExecuteCommand("/bin/bash", $"-c \"{buildCommand}\"", solutionPath);
-
-                // Execute SonarScanner End
                 var sonarEndCommand = $"dotnet-sonarscanner end /d:sonar.login='{_adminUsername}'";
                 await ExecuteCommand("/bin/bash", $"-c \"{sonarEndCommand}\"", solutionPath);
             }
@@ -186,11 +159,8 @@ namespace SonarQubeWorker.DataAccess
 
         private string ExtractTokenFromResponse(string responseContent)
         {
-            // Parse the JSON response
             var jsonResponse = JObject.Parse(responseContent);
 
-            // Extract the token. This assumes the JSON structure has a field 'token'
-            // The exact field name and structure may vary depending on your SonarQube version
             var token = jsonResponse["token"]?.ToString();
 
             if (string.IsNullOrEmpty(token))
@@ -202,7 +172,6 @@ namespace SonarQubeWorker.DataAccess
         }
         private static string FindSolutionPath(string startDirectory)
         {
-            // Check if the startDirectory is valid
             if (string.IsNullOrEmpty(startDirectory) || !Directory.Exists(startDirectory))
             {
                 throw new InvalidOperationException("Invalid start directory.");
@@ -214,11 +183,9 @@ namespace SonarQubeWorker.DataAccess
 
         private static string FindSolutionInDirectory(DirectoryInfo directory)
         {
-            // Search for .sln files in the current directory
             var solutionFiles = directory.GetFiles("*.sln");
             if (solutionFiles.Length > 0)
             {
-                // Return the directory path of the first found solution file
                 return solutionFiles[0].DirectoryName;
             }
 

@@ -53,39 +53,37 @@ namespace SonarQubeWorker
             await processor.StopProcessingAsync();
         }
 
-        public async Task<string> DownloadSourceCodeLocally(string filename, string userId)
+        public async Task<string> DownloadSourceCodeLocally(string scanId, string userId)
         {
-
             try
             {
                 // Download file
-                RetrieveSourceCodeResponse? file = await _azureBlobDataAccess.DownloadAsyncInstantDownload(filename, userId);
+                RetrieveSourceCodeResponse? file = await _azureBlobDataAccess.DownloadAsyncInstantDownload(scanId, userId);
                 if (file == null)
                 {
                     // Was not, return error message to client
-                    return $"File {filename} could not be downloaded.";
+                    return $"File {scanId} could not be downloaded.";
                 }
 
                 //Unzip source code file
-                var sourcefolder = await UnzipFolder(filename);
+                var sourcefolder = await UnzipFolder(scanId);
 
-
+                //Remove the .zip extension
+                var cleanScanId = scanId.Replace(".zip", "");
 
                 //Execute SonarQube scan
                 //create project
-                await _sonarQubeDataAccess.CreateSonarQubeProject(filename);
+                await _sonarQubeDataAccess.CreateSonarQubeProject(cleanScanId);
 
                 //generate sonarqube project token
-                var token = await _sonarQubeDataAccess.GenerateSonarQubeToken(filename);
+                var token = await _sonarQubeDataAccess.GenerateSonarQubeToken(cleanScanId);
 
 
                 //Go into directory and execute the sonarscanner commands
-                await _sonarQubeDataAccess.ExecuteSonarScannerAndBuild(filename, token);
-
-
+                await _sonarQubeDataAccess.ExecuteSonarScannerAndBuild(cleanScanId, token);
 
                 await Task.Delay(5000);
-                var results = await _sonarQubeDataAccess.GetSonarqubeResults(filename);
+                var results = await _sonarQubeDataAccess.GetSonarqubeResults(cleanScanId);
 
                 var mappedResults = await _mapper.MapToResults(results);
 
@@ -95,12 +93,9 @@ namespace SonarQubeWorker
             }
             catch (Exception ex)
             {
-                // Handle other exceptions here if needed, and send an appropriate response to the client.
-                // You can also log the error if needed.
                 return $"An error occurred: {ex.Message}";
             }
         }
-        //to SonarQubeDataAccess Layer
 
 
 
@@ -108,55 +103,45 @@ namespace SonarQubeWorker
         {
             try
             {
-                // Process the message
                 string messageBody = args.Message.Body.ToString();
                 _logger.LogInformation($"Received message: {messageBody}");
-                if (!IsValidMessage(messageBody, out string projectlanguage, out string filename, out string userid))
+                if (!IsValidMessage(messageBody, out string projectlanguage, out string scanid, out string userid))
                 {
                     Console.WriteLine("Invalid message format or missing arguments.");
                     await args.AbandonMessageAsync(args.Message);
                     return;
                 }
                 dynamic parsedMessage = JsonConvert.DeserializeObject(messageBody);
-                string fileName = parsedMessage.filename;
+                string scanId = parsedMessage.scanid;
                 string userId = parsedMessage.userid;
 
 
-                await DownloadSourceCodeLocally(filename, userId);
-                //call the scan function using the gained data and execute the scan 
-
-                // Complete the message to remove it from the subscription
+                await DownloadSourceCodeLocally(scanId, userId);
                 await args.CompleteMessageAsync(args.Message);
             }
             catch (Exception ex)
             {
-                // Handle any exceptions that occur while processing the message
                 _logger.LogError($"Error occurred while processing the message: {ex.Message}");
-
-                // Abandon the message to let the Service Bus retry processing it
                 await args.AbandonMessageAsync(args.Message);
             }
         }
 
         private Task ProcessErrorAsync(ProcessErrorEventArgs args)
         {
-            // Handle any exceptions that occur during the message handler execution
             _logger.LogError($"Exception occurred while receiving message: {args.Exception.Message}");
             return Task.CompletedTask;
         }
 
-        private bool IsValidMessage(string messageBody, out string projectlanguage, out string filename, out string userId)
+        private bool IsValidMessage(string messageBody, out string projectlanguage, out string scanId, out string userId)
         {
             try
             {
                 dynamic parsedMessage = JsonConvert.DeserializeObject(messageBody);
 
                 projectlanguage = parsedMessage.projectlanguage;
-                filename = parsedMessage.filename;
+                scanId = parsedMessage.scanid;
                 userId = parsedMessage.userid;
-
-                // Validate if filename and userId exist in the parsed message
-                if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(userId) || projectlanguage != "c#")
+                if (string.IsNullOrEmpty(scanId) || string.IsNullOrEmpty(userId) || projectlanguage != "c#")
                 {
                     return false;
                 }
@@ -166,7 +151,7 @@ namespace SonarQubeWorker
             catch
             {
                 projectlanguage = null;
-                filename = null;
+                scanId = null;
                 userId = null;
                 return false;
 
@@ -191,7 +176,6 @@ namespace SonarQubeWorker
             }
             catch (Exception ex)
             {
-                // You can also log the error if needed.
                 throw new Exception($"Error extracting zip file '{filename}': {ex.Message}");
             }
         }

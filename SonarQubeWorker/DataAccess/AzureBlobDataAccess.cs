@@ -26,14 +26,14 @@ namespace SonarQubeWorker.DataAccess
 
         }
 
-        public async Task<RetrieveSourceCodeResponse> DownloadAsyncInstantDownload(string blobFilename, string userId)
+        public async Task<RetrieveSourceCodeResponse> DownloadAsyncInstantDownload(string scanId, string userId)
         {
             BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-            string destinationFilePath = blobFilename;
+            string destinationFilePath = scanId;
             try
             {
                 // Get a reference to the blob uploaded earlier from the API in the container from configuration settings
-                BlobClient file = client.GetBlobClient(userId + "\\" + blobFilename);
+                BlobClient file = client.GetBlobClient(userId + "\\" + scanId);
 
                 // Check if the file exists in the container
                 if (await file.ExistsAsync())
@@ -42,7 +42,7 @@ namespace SonarQubeWorker.DataAccess
 
                     // Retrieve the file properties to populate the BlobDto
                     BlobProperties properties = await file.GetPropertiesAsync();
-                    string name = blobFilename;
+                    string name = scanId;
                     string contentType = properties.ContentType;
 
 
@@ -55,7 +55,7 @@ namespace SonarQubeWorker.DataAccess
 
             {
                 // Log error to console
-                _logger.LogError($"File {blobFilename} was not found.");
+                _logger.LogError($"File {scanId} was not found.");
             }
 
             // File does not exist

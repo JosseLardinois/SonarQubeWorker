@@ -19,15 +19,8 @@ namespace SonarQubeWorker.Service
         public async Task SendRequest(Guid scanId)
         {
             var client = _httpClientFactory.CreateClient();
-            // Set the base address for HTTP requests
-            client.BaseAddress = new Uri("http://sonarqubeapi.b2gwfvg6c2gddqcd.westeurope.azurecontainer.io/");
-
-            // Set basic authentication header with admin credentials
-
-            // Construct URL with component and metrics
+            client.BaseAddress = new Uri("https://sonarqubeapi.b2gwfvg6c2gddqcd.westeurope.azurecontainer.io/");
             var url = $"GetProjectResults?projectName={scanId}";
-
-            // Send a GET request to the SonarQube API
             var response = await client.GetAsync(url);
         }
     }
